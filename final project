@@ -1,0 +1,78 @@
+#include <IRremote.h>
+
+// Define constants for pin numbers
+const int Led1Pin = 2;
+const int Led2Pin = 3;
+const int PIRPin = 8;
+const int IRDiodePin = 11;
+
+// Initialize variables
+int led1State = LOW;
+int led2State = LOW;
+
+// Initialize IR receiver
+IRrecv irReceiver(IRDiodePin);
+decode_results irResults;
+
+void setup() {
+  // Set pin modes
+  pinMode(Led1Pin, OUTPUT);
+  pinMode(Led2Pin, OUTPUT);
+  pinMode(PIRPin, INPUT);
+
+  // Initialize LEDs to OFF state
+  digitalWrite(Led1Pin, led1State);
+  digitalWrite(Led2Pin, led2State);
+
+  // Start serial communication
+  Serial.begin(9600);
+
+  // Enable IR receiver
+  irReceiver.enableIRIn();
+}
+
+void loop() {
+  // Check PIR sensor for motion
+  int motionState = digitalRead(PIRPin);
+  if (motionState == HIGH) {
+    digitalWrite(Led1Pin, HIGH);
+    delay(10000);
+    digitalWrite(Led2Pin, LOW);
+  }
+
+  // Check for IR remote signals
+  if (irReceiver.decode(&irResults)) {
+    int irValue = irResults.value;
+    processIRSignal(irValue);
+    irReceiver.resume();
+  }
+}
+
+// Function to process IR remote signals
+void processIRSignal(int value) {
+  switch (value) {
+    case 2295: // Button 1
+      toggleLEDState(Led1Pin, led1State);
+      break;
+    case 34935: // Button 2
+      toggleLEDState(Led2Pin, led2State);
+      break;
+  }
+}
+
+// Function to toggle LED state
+void toggleLEDState(int ledPin, int &ledState) {
+  if (ledState == LOW) {
+    digitalWrite(ledPin, HIGH);
+    ledState = HIGH;
+    Serial.print("Room ");
+    Serial.print(ledPin == Led1Pin ? "1 " : "2 ");
+    Serial.println("ON");
+  } else {
+    digitalWrite(ledPin, LOW);
+    ledState = LOW;
+    Serial.print("Room ");
+    Serial.print(ledPin == Led1Pin ? "1 " : "2 ");
+    Serial.println("OFF");
+  }
+}
